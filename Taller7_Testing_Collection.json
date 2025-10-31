@@ -1,0 +1,1164 @@
+{
+	"info": {
+		"name": "Taller 7 - Testing Completo",
+		"description": "Colección de pruebas organizada en 7 carpetas según requerimientos del taller",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "1. Pruebas Keywords (3 servicios REST)",
+			"item": [
+				{
+					"name": "KW1 - Listar Espacios Físicos (por patrón y capacidad)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/espacios-fisicos?patron=Lab&capacidad=30",
+							"host": ["{{base_url}}"],
+							"path": ["espacios-fisicos"],
+							"query": [
+								{
+									"key": "patron",
+									"value": "Lab",
+									"description": "Patrón de búsqueda (comienza con)"
+								},
+								{
+									"key": "capacidad",
+									"value": "30",
+									"description": "Capacidad mínima"
+								}
+							]
+						},
+						"description": "**Keyword:** `findByNombreStartingWithIgnoreCaseAndCapacidadGreaterThanEqualOrderByNombreAsc`\n\nBusca espacios físicos cuyo nombre comience con el patrón (ignorando mayúsculas) y tengan capacidad >= valor especificado, ordenados ascendentemente por nombre."
+					}
+				},
+				{
+					"name": "KW2 - Listar Cursos por Asignatura",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/cursos/por-asignatura?nombreAsignatura=Matematicas",
+							"host": ["{{base_url}}"],
+							"path": ["cursos", "por-asignatura"],
+							"query": [
+								{
+									"key": "nombreAsignatura",
+									"value": "Matematicas"
+								}
+							]
+						},
+						"description": "**Keyword:** `findByAsignaturaNombre`\n\nObtiene todos los cursos asociados a una asignatura específica por su nombre."
+					}
+				},
+				{
+					"name": "KW3 - Listar Franjas por Curso",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/franjas-horarias/curso/1",
+							"host": ["{{base_url}}"],
+							"path": ["franjas-horarias", "curso", "1"]
+						},
+						"description": "**Keyword:** `findByCursoId`\n\nObtiene todas las franjas horarias ocupadas por un curso con un ID específico."
+					}
+				}
+			],
+			"description": "Pruebas de los 3 servicios REST que utilizan JPA Keywords para consultas."
+		},
+		{
+			"name": "2. Pruebas Reglas de Negocio (5 comprobaciones)",
+			"item": [
+				{
+					"name": "RN1 - Espacio Físico Ocupado (Rechazar)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 406 (Not Acceptable)\", function () {",
+									"    pm.response.to.have.status(406);",
+									"});",
+									"",
+									"pm.test(\"Mensaje indica espacio ocupado\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.mensaje).to.include(\"espacio físico está ocupado\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [{"key": "Content-Type", "value": "application/json"}],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"dia\": \"Lunes\",\n  \"horaInicio\": \"08:30\",\n  \"horaFin\": \"10:00\",\n  \"idCurso\": 2,\n  \"idEspacioFisico\": 1\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/franjas-horarias",
+							"host": ["{{base_url}}"],
+							"path": ["franjas-horarias"]
+						},
+						"description": "Intenta crear una franja en un espacio físico que YA está ocupado en ese horario. Debe retornar HTTP 406."
+					}
+				},
+				{
+					"name": "RN2 - Docente Ocupado (Rechazar)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 406 (Not Acceptable)\", function () {",
+									"    pm.response.to.have.status(406);",
+									"});",
+									"",
+									"pm.test(\"Mensaje indica docente ocupado\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.mensaje).to.include(\"docente\").and.to.include(\"ocupado\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [{"key": "Content-Type", "value": "application/json"}],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"dia\": \"Lunes\",\n  \"horaInicio\": \"08:00\",\n  \"horaFin\": \"09:30\",\n  \"idCurso\": 2,\n  \"idEspacioFisico\": 3\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/franjas-horarias",
+							"host": ["{{base_url}}"],
+							"path": ["franjas-horarias"]
+						},
+						"description": "Intenta crear una franja cuando el docente del curso YA está ocupado. Debe retornar HTTP 406."
+					}
+				},
+				{
+					"name": "RN3 - Espacio Físico No Existe (Rechazar)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 404 (Not Found)\", function () {",
+									"    pm.response.to.have.status(404);",
+									"});",
+									"",
+									"pm.test(\"Mensaje indica espacio no encontrado\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.mensaje).to.include(\"Espacio físico\").and.to.include(\"no existe\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [{"key": "Content-Type", "value": "application/json"}],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"dia\": \"Miercoles\",\n  \"horaInicio\": \"14:00\",\n  \"horaFin\": \"16:00\",\n  \"idCurso\": 1,\n  \"idEspacioFisico\": 9999\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/franjas-horarias",
+							"host": ["{{base_url}}"],
+							"path": ["franjas-horarias"]
+						},
+						"description": "Intenta crear una franja con un espacio físico inexistente. Debe retornar HTTP 404."
+					}
+				},
+				{
+					"name": "RN4 - Curso No Existe (Rechazar)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 404 (Not Found)\", function () {",
+									"    pm.response.to.have.status(404);",
+									"});",
+									"",
+									"pm.test(\"Mensaje indica curso no encontrado\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.mensaje).to.include(\"Curso\").and.to.include(\"no existe\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [{"key": "Content-Type", "value": "application/json"}],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"dia\": \"Jueves\",\n  \"horaInicio\": \"10:00\",\n  \"horaFin\": \"12:00\",\n  \"idCurso\": 9999,\n  \"idEspacioFisico\": 1\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/franjas-horarias",
+							"host": ["{{base_url}}"],
+							"path": ["franjas-horarias"]
+						},
+						"description": "Intenta crear una franja con un curso inexistente. Debe retornar HTTP 404."
+					}
+				},
+				{
+					"name": "RN5 - Correo Docente Duplicado (Rechazar)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 409 (Conflict)\", function () {",
+									"    pm.response.to.have.status(409);",
+									"});",
+									"",
+									"pm.test(\"Mensaje indica correo duplicado\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.mensaje).to.include(\"correo\").and.to.include(\"ya existe\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [{"key": "Content-Type", "value": "application/json"}],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"nombres\": \"Carlos Alberto\",\n  \"apellidos\": \"Pérez García\",\n  \"correo\": \"jgomez@unicauca.edu.co\",\n  \"oficina\": {\n    \"nombre\": \"Oficina 105\",\n    \"ubicacion\": \"Edificio A - Primer Piso\"\n  }\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/docentes",
+							"host": ["{{base_url}}"],
+							"path": ["docentes"]
+						},
+						"description": "Intenta crear un docente con un correo que YA existe. Debe retornar HTTP 409."
+					}
+				}
+			],
+			"description": "Pruebas de las 5 reglas de negocio implementadas con Chain of Responsibility."
+		},
+		{
+			"name": "3. Validaciones Automáticas CON Errores",
+			"item": [
+				{
+					"name": "VA-ERR1 - Campos Vacíos (@NotEmpty)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 400 (Bad Request)\", function () {",
+									"    pm.response.to.have.status(400);",
+									"});",
+									"",
+									"pm.test(\"Contiene errores de validación\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('dia');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [{"key": "Content-Type", "value": "application/json"}],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"dia\": \"\",\n  \"horaInicio\": \"08:00\",\n  \"horaFin\": \"10:00\",\n  \"idCurso\": 1,\n  \"idEspacioFisico\": 1\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/franjas-horarias",
+							"host": ["{{base_url}}"],
+							"path": ["franjas-horarias"]
+						},
+						"description": "Campo `dia` vacío, viola @NotEmpty. Retorna HTTP 400."
+					}
+				},
+				{
+					"name": "VA-ERR2 - Campos Nulos (@NotNull)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 400 (Bad Request)\", function () {",
+									"    pm.response.to.have.status(400);",
+									"});",
+									"",
+									"pm.test(\"Contiene error de horaInicio\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('horaInicio');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [{"key": "Content-Type", "value": "application/json"}],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"dia\": \"Lunes\",\n  \"horaInicio\": null,\n  \"horaFin\": \"10:00\",\n  \"idCurso\": 1,\n  \"idEspacioFisico\": 1\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/franjas-horarias",
+							"host": ["{{base_url}}"],
+							"path": ["franjas-horarias"]
+						},
+						"description": "Campo `horaInicio` es null, viola @NotNull. Retorna HTTP 400."
+					}
+				},
+				{
+					"name": "VA-ERR3 - Email Inválido (@Email)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 400 (Bad Request)\", function () {",
+									"    pm.response.to.have.status(400);",
+									"});",
+									"",
+									"pm.test(\"Contiene error de correo\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('correo');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [{"key": "Content-Type", "value": "application/json"}],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"nombres\": \"Pedro\",\n  \"apellidos\": \"Martinez\",\n  \"correo\": \"correo-invalido\",\n  \"oficina\": {\n    \"nombre\": \"Of 101\",\n    \"ubicacion\": \"Edificio B\"\n  }\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/docentes",
+							"host": ["{{base_url}}"],
+							"path": ["docentes"]
+						},
+						"description": "Correo sin formato válido, viola @Email. Retorna HTTP 400."
+					}
+				},
+				{
+					"name": "VA-ERR4 - Tamaño Inválido (@Size)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 400 (Bad Request)\", function () {",
+									"    pm.response.to.have.status(400);",
+									"});",
+									"",
+									"pm.test(\"Contiene error de nombres\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('nombres');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [{"key": "Content-Type", "value": "application/json"}],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"nombres\": \"A\",\n  \"apellidos\": \"Gonzalez\",\n  \"correo\": \"agonzalez@unicauca.edu.co\",\n  \"oficina\": {\n    \"nombre\": \"Of 102\",\n    \"ubicacion\": \"Edificio C\"\n  }\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/docentes",
+							"host": ["{{base_url}}"],
+							"path": ["docentes"]
+						},
+						"description": "Campo `nombres` muy corto (1 carácter), viola @Size(min=2). Retorna HTTP 400."
+					}
+				},
+				{
+					"name": "VA-ERR5 - Valor Mínimo (@Min)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 400 (Bad Request)\", function () {",
+									"    pm.response.to.have.status(400);",
+									"});",
+									"",
+									"pm.test(\"Mensaje indica docenteId inválido\", function () {",
+									"    var responseText = pm.response.text();",
+									"    pm.expect(responseText).to.include(\"docenteId\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/franjas-horarias/docente/0",
+							"host": ["{{base_url}}"],
+							"path": ["franjas-horarias", "docente", "0"]
+						},
+						"description": "docenteId = 0, viola @Min(value=1). Retorna HTTP 400."
+					}
+				}
+			],
+			"description": "Pruebas de validaciones automáticas donde se detectan errores en los DTOs (retornan HTTP 400)."
+		},
+		{
+			"name": "4. Validaciones Automáticas SIN Errores",
+			"item": [
+				{
+					"name": "VA-OK1 - Crear Franja (Todos los campos válidos)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 201 (Created)\", function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"",
+									"pm.test(\"Respuesta contiene ID\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('id');",
+									"    pm.expect(jsonData.id).to.be.a('number');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [{"key": "Content-Type", "value": "application/json"}],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"dia\": \"Viernes\",\n  \"horaInicio\": \"14:00\",\n  \"horaFin\": \"16:00\",\n  \"idCurso\": 1,\n  \"idEspacioFisico\": 5\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/franjas-horarias",
+							"host": ["{{base_url}}"],
+							"path": ["franjas-horarias"]
+						},
+						"description": "Todos los campos son válidos. Retorna HTTP 201."
+					}
+				},
+				{
+					"name": "VA-OK2 - Crear Docente (Todos los campos válidos)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 201 (Created)\", function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"",
+									"pm.test(\"Respuesta contiene correo\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('correo');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [{"key": "Content-Type", "value": "application/json"}],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"nombres\": \"Laura Sofia\",\n  \"apellidos\": \"Rodriguez Castillo\",\n  \"correo\": \"lrodriguez@unicauca.edu.co\",\n  \"oficina\": {\n    \"nombre\": \"Oficina 205\",\n    \"ubicacion\": \"Edificio D - Segundo Piso\"\n  }\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/docentes",
+							"host": ["{{base_url}}"],
+							"path": ["docentes"]
+						},
+						"description": "Todos los campos cumplen validaciones. Retorna HTTP 201."
+					}
+				},
+				{
+					"name": "VA-OK3 - Listar Franjas por Docente (ID válido)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200 (OK)\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Respuesta es un array\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.be.an('array');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/franjas-horarias/docente/1",
+							"host": ["{{base_url}}"],
+							"path": ["franjas-horarias", "docente", "1"]
+						},
+						"description": "docenteId válido (>= 1). Retorna HTTP 200."
+					}
+				}
+			],
+			"description": "Pruebas donde todos los datos cumplen las validaciones automáticas (retornan HTTP 200 o 201)."
+		},
+		{
+			"name": "5. Validaciones Personalizadas",
+			"item": [
+				{
+					"name": "VP1 - Formato Hora Militar Inválido",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 400 (Bad Request)\", function () {",
+									"    pm.response.to.have.status(400);",
+									"});",
+									"",
+									"pm.test(\"Mensaje indica formato inválido\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.horaInicio || jsonData.horaFin).to.exist;",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [{"key": "Content-Type", "value": "application/json"}],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"dia\": \"Martes\",\n  \"horaInicio\": \"25:00\",\n  \"horaFin\": \"10:00\",\n  \"idCurso\": 1,\n  \"idEspacioFisico\": 2\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/franjas-horarias",
+							"host": ["{{base_url}}"],
+							"path": ["franjas-horarias"]
+						},
+						"description": "@FormatoHoraMilitar: hora inválida (25:00). Retorna HTTP 400."
+					}
+				},
+				{
+					"name": "VP2 - Capacidad Espacio < Matrícula Curso",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 400 (Bad Request)\", function () {",
+									"    pm.response.to.have.status(400);",
+									"});",
+									"",
+									"pm.test(\"Mensaje indica capacidad insuficiente\", function () {",
+									"    var responseText = pm.response.text();",
+									"    pm.expect(responseText).to.include(\"capacidad\").or.include(\"matrícula\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [{"key": "Content-Type", "value": "application/json"}],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"dia\": \"Miercoles\",\n  \"horaInicio\": \"14:00\",\n  \"horaFin\": \"16:00\",\n  \"idCurso\": 1,\n  \"idEspacioFisico\": 2\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/franjas-horarias",
+							"host": ["{{base_url}}"],
+							"path": ["franjas-horarias"]
+						},
+						"description": "@CapacidadEspacioFisico: Curso 1 tiene matrícula 35, Espacio 2 tiene capacidad 25. Retorna HTTP 400."
+					}
+				},
+				{
+					"name": "VP3 - Hora Inicio > Hora Fin",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 400 (Bad Request)\", function () {",
+									"    pm.response.to.have.status(400);",
+									"});",
+									"",
+									"pm.test(\"Mensaje indica error de horas\", function () {",
+									"    var responseText = pm.response.text();",
+									"    pm.expect(responseText).to.include(\"hora\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [{"key": "Content-Type", "value": "application/json"}],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"dia\": \"Jueves\",\n  \"horaInicio\": \"16:00\",\n  \"horaFin\": \"14:00\",\n  \"idCurso\": 2,\n  \"idEspacioFisico\": 3\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/franjas-horarias",
+							"host": ["{{base_url}}"],
+							"path": ["franjas-horarias"]
+						},
+						"description": "Hora de inicio mayor que hora fin. Validación personalizada. Retorna HTTP 400."
+					}
+				}
+			],
+			"description": "Pruebas de validaciones personalizadas: @FormatoHoraMilitar y @CapacidadEspacioFisico."
+		},
+		{
+			"name": "6. Validaciones Mensajes i18n (ES/EN)",
+			"item": [
+				{
+					"name": "i18n-ES1 - Mensaje en Español (@NotEmpty)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 400\", function () {",
+									"    pm.response.to.have.status(400);",
+									"});",
+									"",
+									"pm.test(\"Mensaje está en español\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    var mensaje = JSON.stringify(jsonData);",
+									"    pm.expect(mensaje).to.match(/no puede estar vacío|no debe estar vacío|requerido/i);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Content-Type", "value": "application/json"},
+							{"key": "Accept-Language", "value": "es"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"dia\": \"\",\n  \"horaInicio\": \"08:00\",\n  \"horaFin\": \"10:00\",\n  \"idCurso\": 1,\n  \"idEspacioFisico\": 1\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/franjas-horarias",
+							"host": ["{{base_url}}"],
+							"path": ["franjas-horarias"]
+						},
+						"description": "Header: Accept-Language: es. Mensaje de error en español."
+					}
+				},
+				{
+					"name": "i18n-EN1 - Mensaje en Inglés (@NotEmpty)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 400\", function () {",
+									"    pm.response.to.have.status(400);",
+									"});",
+									"",
+									"pm.test(\"Mensaje está en inglés\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    var mensaje = JSON.stringify(jsonData);",
+									"    pm.expect(mensaje).to.match(/cannot be empty|must not be empty|required/i);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Content-Type", "value": "application/json"},
+							{"key": "Accept-Language", "value": "en"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"dia\": \"\",\n  \"horaInicio\": \"08:00\",\n  \"horaFin\": \"10:00\",\n  \"idCurso\": 1,\n  \"idEspacioFisico\": 1\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/franjas-horarias",
+							"host": ["{{base_url}}"],
+							"path": ["franjas-horarias"]
+						},
+						"description": "Header: Accept-Language: en. Mensaje de error en inglés."
+					}
+				},
+				{
+					"name": "i18n-ES2 - Email Inválido (Español)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 400\", function () {",
+									"    pm.response.to.have.status(400);",
+									"});",
+									"",
+									"pm.test(\"Mensaje de correo en español\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.correo).to.exist;",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Content-Type", "value": "application/json"},
+							{"key": "Accept-Language", "value": "es"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"nombres\": \"Ana María\",\n  \"apellidos\": \"Lopez Torres\",\n  \"correo\": \"correo-sin-arroba\",\n  \"oficina\": {\n    \"nombre\": \"Of 301\",\n    \"ubicacion\": \"Edificio E\"\n  }\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/docentes",
+							"host": ["{{base_url}}"],
+							"path": ["docentes"]
+						},
+						"description": "Validación @Email con mensaje en español."
+					}
+				},
+				{
+					"name": "i18n-EN2 - Email Inválido (Inglés)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 400\", function () {",
+									"    pm.response.to.have.status(400);",
+									"});",
+									"",
+									"pm.test(\"Mensaje de correo en inglés\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.correo).to.exist;",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Content-Type", "value": "application/json"},
+							{"key": "Accept-Language", "value": "en"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"nombres\": \"John\",\n  \"apellidos\": \"Doe\",\n  \"correo\": \"invalid-email\",\n  \"oficina\": {\n    \"nombre\": \"Office 401\",\n    \"ubicacion\": \"Building F\"\n  }\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/docentes",
+							"host": ["{{base_url}}"],
+							"path": ["docentes"]
+						},
+						"description": "Validación @Email con mensaje en inglés."
+					}
+				},
+				{
+					"name": "i18n-ES3 - Validación Personalizada (Español)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 400\", function () {",
+									"    pm.response.to.have.status(400);",
+									"});",
+									"",
+									"pm.test(\"Mensaje personalizado en español\", function () {",
+									"    var responseText = pm.response.text();",
+									"    pm.expect(responseText).to.include(\"capacidad\").or.include(\"matrícula\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Content-Type", "value": "application/json"},
+							{"key": "Accept-Language", "value": "es"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"dia\": \"Lunes\",\n  \"horaInicio\": \"10:00\",\n  \"horaFin\": \"12:00\",\n  \"idCurso\": 1,\n  \"idEspacioFisico\": 2\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/franjas-horarias",
+							"host": ["{{base_url}}"],
+							"path": ["franjas-horarias"]
+						},
+						"description": "@CapacidadEspacioFisico con mensaje en español."
+					}
+				},
+				{
+					"name": "i18n-EN3 - Validación Personalizada (Inglés)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 400\", function () {",
+									"    pm.response.to.have.status(400);",
+									"});",
+									"",
+									"pm.test(\"Mensaje personalizado en inglés\", function () {",
+									"    var responseText = pm.response.text();",
+									"    pm.expect(responseText).to.include(\"capacity\").or.include(\"enrollment\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Content-Type", "value": "application/json"},
+							{"key": "Accept-Language", "value": "en"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"dia\": \"Monday\",\n  \"horaInicio\": \"10:00\",\n  \"horaFin\": \"12:00\",\n  \"idCurso\": 1,\n  \"idEspacioFisico\": 2\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/franjas-horarias",
+							"host": ["{{base_url}}"],
+							"path": ["franjas-horarias"]
+						},
+						"description": "@CapacidadEspacioFisico con mensaje en inglés."
+					}
+				}
+			],
+			"description": "Pruebas de internacionalización (i18n) con mensajes en español e inglés usando Accept-Language header."
+		},
+		{
+			"name": "7. Servicios REST con Entities",
+			"item": [
+				{
+					"name": "ENT1 - Crear Franja (Cascade a entities)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 201\", function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"",
+									"pm.test(\"Respuesta incluye curso completo\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.curso).to.exist;",
+									"    pm.expect(jsonData.curso.nombre).to.exist;",
+									"});",
+									"",
+									"pm.test(\"Respuesta incluye espacio físico completo\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.espacioFisico).to.exist;",
+									"    pm.expect(jsonData.espacioFisico.nombre).to.exist;",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [{"key": "Content-Type", "value": "application/json"}],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"dia\": \"Sabado\",\n  \"horaInicio\": \"08:00\",\n  \"horaFin\": \"10:00\",\n  \"idCurso\": 1,\n  \"idEspacioFisico\": 5\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/franjas-horarias",
+							"host": ["{{base_url}}"],
+							"path": ["franjas-horarias"]
+						},
+						"description": "Crea FranjaHoraria y retorna entities relacionadas (Curso, EspacioFisico) con EAGER fetch."
+					}
+				},
+				{
+					"name": "ENT2 - Crear Docente (Cascade PERSIST Oficina)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 201\", function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"",
+									"pm.test(\"Respuesta incluye oficina\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.oficina).to.exist;",
+									"    pm.expect(jsonData.oficina.nombre).to.exist;",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [{"key": "Content-Type", "value": "application/json"}],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"nombres\": \"Roberto Carlos\",\n  \"apellidos\": \"Sanchez Moreno\",\n  \"correo\": \"rsanchez@unicauca.edu.co\",\n  \"oficina\": {\n    \"nombre\": \"Oficina 501\",\n    \"ubicacion\": \"Edificio G - Quinto Piso\"\n  }\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/docentes",
+							"host": ["{{base_url}}"],
+							"path": ["docentes"]
+						},
+						"description": "Crea Docente y persiste Oficina en cascada (CascadeType.PERSIST)."
+					}
+				},
+				{
+					"name": "ENT3 - Listar Franjas por Docente (EAGER join)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Array de franjas con curso y espacio\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.be.an('array');",
+									"    if (jsonData.length > 0) {",
+									"        pm.expect(jsonData[0].curso).to.exist;",
+									"        pm.expect(jsonData[0].espacioFisico).to.exist;",
+									"    }",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/franjas-horarias/docente/1",
+							"host": ["{{base_url}}"],
+							"path": ["franjas-horarias", "docente", "1"]
+						},
+						"description": "Lista franjas con JPQL join, retorna entities (Curso, EspacioFisico) con EAGER."
+					}
+				},
+				{
+					"name": "ENT4 - Listar Franjas por Curso (JPQL join)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Franjas incluyen espacioFisico\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    if (jsonData.length > 0) {",
+									"        pm.expect(jsonData[0].espacioFisico).to.exist;",
+									"    }",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/franjas-horarias/curso/1",
+							"host": ["{{base_url}}"],
+							"path": ["franjas-horarias", "curso", "1"]
+						},
+						"description": "Lista franjas por curso con join JPQL a EspacioFisico."
+					}
+				},
+				{
+					"name": "ENT5 - Actualizar Estado Espacio (Native SQL)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Mensaje de éxito\", function () {",
+									"    var responseText = pm.response.text();",
+									"    pm.expect(responseText).to.include(\"actualizado\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "PATCH",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/espacios-fisicos/1/estado?estado=false",
+							"host": ["{{base_url}}"],
+							"path": ["espacios-fisicos", "1", "estado"],
+							"query": [
+								{
+									"key": "estado",
+									"value": "false"
+								}
+							]
+						},
+						"description": "Actualiza solo el campo estado de EspacioFisico usando Native SQL."
+					}
+				},
+				{
+					"name": "ENT6 - Listar Espacios con Query personalizada",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Espacios ordenados alfabéticamente\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.be.an('array');",
+									"    if (jsonData.length > 1) {",
+									"        pm.expect(jsonData[0].nombre <= jsonData[1].nombre).to.be.true;",
+									"    }",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/espacios-fisicos?patron=&capacidad=0",
+							"host": ["{{base_url}}"],
+							"path": ["espacios-fisicos"],
+							"query": [
+								{
+									"key": "patron",
+									"value": ""
+								},
+								{
+									"key": "capacidad",
+									"value": "0"
+								}
+							]
+						},
+						"description": "Lista todos los espacios usando Keyword query con ordenamiento."
+					}
+				},
+				{
+					"name": "ENT7 - Listar Cursos por Asignatura (Join Entity)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Cursos incluyen asignatura\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    if (jsonData.length > 0) {",
+									"        pm.expect(jsonData[0].asignatura).to.exist;",
+									"    }",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/cursos/por-asignatura?nombreAsignatura=Matematicas",
+							"host": ["{{base_url}}"],
+							"path": ["cursos", "por-asignatura"],
+							"query": [
+								{
+									"key": "nombreAsignatura",
+									"value": "Matematicas"
+								}
+							]
+						},
+						"description": "Lista cursos con join a AsignaturaEntity usando Keyword query."
+					}
+				}
+			],
+			"description": "Pruebas de servicios REST que trabajan directamente con entities, incluyendo EAGER/LAZY fetch, cascades, y queries JPQL/Native."
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:8080/api",
+			"type": "string"
+		}
+	]
+}

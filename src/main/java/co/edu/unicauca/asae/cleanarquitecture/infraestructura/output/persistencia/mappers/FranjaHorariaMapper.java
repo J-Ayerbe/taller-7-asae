@@ -23,7 +23,28 @@ public class FranjaHorariaMapper {
     }
 
     public FranjaHoraria entityToDomain(FranjaHorariaEntity franjaHorariaEntity) {
-        return modelMapper.map(franjaHorariaEntity, FranjaHoraria.class);
+        if (franjaHorariaEntity == null) {
+            return null;
+        }
+
+        // Mapeo manual para asegurar que se carguen todos los datos
+        FranjaHoraria franja = new FranjaHoraria();
+        franja.setId(franjaHorariaEntity.getId());
+        franja.setDia(franjaHorariaEntity.getDia());
+        franja.setHoraInicio(franjaHorariaEntity.getHoraInicio());
+        franja.setHoraFin(franjaHorariaEntity.getHoraFin());
+
+        // Mapear curso completo
+        if (franjaHorariaEntity.getCurso() != null) {
+            franja.setCurso(modelMapper.map(franjaHorariaEntity.getCurso(), co.edu.unicauca.asae.cleanarquitecture.dominio.modelos.Curso.class));
+        }
+
+        // Mapear espacio físico completo
+        if (franjaHorariaEntity.getEspacioFisico() != null) {
+            franja.setEspacioFisico(modelMapper.map(franjaHorariaEntity.getEspacioFisico(), co.edu.unicauca.asae.cleanarquitecture.dominio.modelos.EspacioFisico.class));
+        }
+
+        return franja;
     }
 
     public List<FranjaHoraria> entitiesToDomain(List<FranjaHorariaEntity> entities) {

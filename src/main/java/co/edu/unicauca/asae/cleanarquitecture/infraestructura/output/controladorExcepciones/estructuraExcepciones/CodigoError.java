@@ -1,10 +1,5 @@
 package co.edu.unicauca.asae.cleanarquitecture.infraestructura.output.controladorExcepciones.estructuraExcepciones;
 
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
-
-@RequiredArgsConstructor
-@Getter
 public enum CodigoError {
 
         ERROR_GENERICO("GC-0001", "ERROR GENERICO"),
@@ -17,4 +12,17 @@ public enum CodigoError {
 
         private final String codigo;
         private final String llaveMensaje;
+
+        CodigoError(String codigo, String llaveMensaje) {
+                this.codigo = codigo;
+                this.llaveMensaje = llaveMensaje;
+        }
+
+        public String getCodigo() {
+                return codigo;
+        }
+
+        public String getLlaveMensaje() {
+                return llaveMensaje;
+        }
 }

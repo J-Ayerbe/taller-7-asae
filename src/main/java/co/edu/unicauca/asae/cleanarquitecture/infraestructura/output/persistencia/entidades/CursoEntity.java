@@ -36,7 +36,7 @@ public class CursoEntity {
     @Column(nullable = false)
     private Integer matriculaEstimada;
 
-    @ManyToOne(optional = false)
+    @ManyToOne(optional = false, fetch = FetchType.EAGER)
     @JoinColumn(name = "asignatura_id")
     private AsignaturaEntity asignatura;
 

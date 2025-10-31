@@ -10,6 +10,8 @@ import co.edu.unicauca.asae.cleanarquitecture.infraestructura.output.persistenci
 import co.edu.unicauca.asae.cleanarquitecture.infraestructura.output.persistencia.repositorios.FranjaHorariaRepositoryInt;
 import co.edu.unicauca.asae.cleanarquitecture.infraestructura.output.persistencia.repositorios.EspacioFisicoRepositoryInt;
 
+import javax.persistence.EntityManager;
+import javax.persistence.PersistenceContext;
 import java.time.LocalTime;
 import java.util.List;
 
@@ -19,6 +21,9 @@ public class GestionarFranjaHorariaGatewayImplAdapter implements GestionarFranja
     private final FranjaHorariaRepositoryInt franjaHorariaRepository;
     private final EspacioFisicoRepositoryInt espacioFisicoRepository;
     private final FranjaHorariaMapper franjaHorariaMapper;
+
+    @PersistenceContext
+    private EntityManager entityManager;
 
     public GestionarFranjaHorariaGatewayImplAdapter(
             FranjaHorariaRepositoryInt franjaHorariaRepository,
@@ -33,7 +38,18 @@ public class GestionarFranjaHorariaGatewayImplAdapter implements GestionarFranja
     public FranjaHoraria guardar(FranjaHoraria franjaHoraria) {
         FranjaHorariaEntity franjaEntity = franjaHorariaMapper.domainToEntity(franjaHoraria);
         FranjaHorariaEntity franjaGuardada = franjaHorariaRepository.save(franjaEntity);
-        return franjaHorariaMapper.entityToDomain(franjaGuardada);
+
+        // Flush para asegurar que se guarde en BD
+        franjaHorariaRepository.flush();
+
+        // IMPORTANTE: Limpiar el contexto de persistencia para forzar una nueva carga desde BD
+        entityManager.clear();
+
+        // Recargar la franja con todos los datos (EAGER fetch trae curso y espacio completos)
+        FranjaHorariaEntity franjaCompleta = franjaHorariaRepository.findById(franjaGuardada.getId())
+                .orElse(franjaGuardada);
+
+        return franjaHorariaMapper.entityToDomain(franjaCompleta);
     }
 
     @Override
