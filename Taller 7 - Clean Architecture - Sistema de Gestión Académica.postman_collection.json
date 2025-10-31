@@ -1,0 +1,795 @@
+{
+	"info": {
+		"_postman_id": "17f6ebc4-ebf3-4b22-8baa-1fbfc1c8d24e",
+		"name": "Taller 7 - Clean Architecture - Sistema de Gestión Académica",
+		"description": "Colección completa para probar servicios REST del sistema de gestión de franjas horarias, docentes, cursos y espacios físicos",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "40804968"
+	},
+	"item": [
+		{
+			"name": "1. FRANJAS HORARIAS",
+			"item": [
+				{
+					"name": "1.1 Crear Franja Horaria (EXITOSO)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"dia\": \"Lunes\",\n  \"horaInicio\": \"08:00\",\n  \"horaFin\": \"10:00\",\n  \"idCurso\": 1,\n  \"idEspacioFisico\": 1\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/franjas-horarias",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"franjas-horarias"
+							]
+						},
+						"description": "Crea una nueva franja horaria asociada a un curso y espacio físico. Valida:\n- Validaciones automáticas (@NotNull, @NotEmpty, @FormatoHoraMilitar)\n- Validación personalizada de capacidad\n- Reglas de negocio: espacio físico no ocupado, docente no ocupado, entidades existen"
+					},
+					"response": []
+				},
+				{
+					"name": "1.2 Crear Franja Horaria (ERROR - Validaciones Automáticas)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"dia\": \"\",\n  \"horaInicio\": \"25:00\",\n  \"horaFin\": null,\n  \"idCurso\": null,\n  \"idEspacioFisico\": null\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/franjas-horarias",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"franjas-horarias"
+							]
+						},
+						"description": "Prueba errores de validación automática:\n- dia vacío\n- horaInicio formato inválido (25:00)\n- horaFin nulo\n- idCurso nulo\n- idEspacioFisico nulo\n\nEspera HTTP 400 con mapa de errores"
+					},
+					"response": []
+				},
+				{
+					"name": "1.3 Crear Franja Horaria (ERROR - Espacio Ocupado)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"dia\": \"Lunes\",\n  \"horaInicio\": \"08:30\",\n  \"horaFin\": \"10:30\",\n  \"idCurso\": 2,\n  \"idEspacioFisico\": 1\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/franjas-horarias",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"franjas-horarias"
+							]
+						},
+						"description": "Intenta crear una franja con espacio físico ocupado (solapamiento con franja existente).\n\nEspera HTTP 400 - Error de regla de negocio"
+					},
+					"response": []
+				},
+				{
+					"name": "1.4 Listar Franjas por Docente",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/api/franjas-horarias/docente/1",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"franjas-horarias",
+								"docente",
+								"1"
+							]
+						},
+						"description": "Lista todas las franjas horarias de un docente específico.\nUsa EAGER fetch para traer curso y espacio físico.\nValida @Min(1) en el PathVariable."
+					},
+					"response": []
+				},
+				{
+					"name": "1.5 Listar Franjas por Docente (ERROR - ID inválido)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/api/franjas-horarias/docente/0",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"franjas-horarias",
+								"docente",
+								"0"
+							]
+						},
+						"description": "Prueba validación @Min en PathVariable.\nID debe ser >= 1\n\nEspera HTTP 400"
+					},
+					"response": []
+				},
+				{
+					"name": "1.6 Listar Franjas por Curso (Keyword)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/api/franjas-horarias/curso/1",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"franjas-horarias",
+								"curso",
+								"1"
+							]
+						},
+						"description": "Lista franjas de un curso usando keyword JPA (findByCursoId)"
+					},
+					"response": []
+				},
+				{
+					"name": "1.7 Listar Franjas por Curso (Query JPQL)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/api/franjas-horarias/curso/1/con-query",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"franjas-horarias",
+								"curso",
+								"1",
+								"con-query"
+							]
+						},
+						"description": "Lista franjas usando Query JPQL explícita con FETCH de espacios físicos"
+					},
+					"response": []
+				},
+				{
+					"name": "1.8 Eliminar Franjas por Curso",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/api/franjas-horarias/curso/1",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"franjas-horarias",
+								"curso",
+								"1"
+							]
+						},
+						"description": "Elimina todas las franjas de un curso usando Query JPQL de modificación"
+					},
+					"response": []
+				}
+			],
+			"description": "Servicios REST para gestión de franjas horarias"
+		},
+		{
+			"name": "2. DOCENTES",
+			"item": [
+				{
+					"name": "2.1 Crear Docente (EXITOSO con Oficina)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"nombres\": \"Juan Carlos\",\n  \"apellidos\": \"Pérez López\",\n  \"correo\": \"jcperez@universidad.edu.co\",\n  \"oficina\": {\n    \"nombre\": \"Oficina 301\",\n    \"ubicacion\": \"Edificio A - Tercer piso\"\n  }\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/docentes",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"docentes"
+							]
+						},
+						"description": "Crea un docente con oficina usando CascadeType.PERSIST.\nValida:\n- @NotEmpty en nombres, apellidos, correo\n- @Size en nombres (2-100), apellidos (2-100), correo (max 150)\n- @Email en correo\n- @Valid en oficina\n- Regla de negocio: correo único"
+					},
+					"response": []
+				},
+				{
+					"name": "2.2 Crear Docente (ERROR - Validaciones Automáticas)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"nombres\": \"A\",\n  \"apellidos\": \"\",\n  \"correo\": \"correo-invalido\",\n  \"oficina\": {\n    \"nombre\": \"Of\",\n    \"ubicacion\": \"\"\n  }\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/docentes",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"docentes"
+							]
+						},
+						"description": "Prueba errores de validación:\n- nombres muy corto (1 car, min 2)\n- apellidos vacío\n- correo formato inválido\n- nombre oficina muy corto\n- ubicación oficina vacía\n\nEspera HTTP 400"
+					},
+					"response": []
+				},
+				{
+					"name": "2.3 Crear Docente (ERROR - Correo Duplicado)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"nombres\": \"María José\",\n  \"apellidos\": \"García Ruiz\",\n  \"correo\": \"jcperez@universidad.edu.co\",\n  \"oficina\": {\n    \"nombre\": \"Oficina 302\",\n    \"ubicacion\": \"Edificio B - Segundo piso\"\n  }\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/docentes",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"docentes"
+							]
+						},
+						"description": "Intenta crear docente con correo que ya existe.\n\nEspera HTTP 406 - Entidad Ya Existe"
+					},
+					"response": []
+				},
+				{
+					"name": "2.4 Crear Docente (Español - Validaciones)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept-Language",
+								"value": "es"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"nombres\": \"\",\n  \"apellidos\": \"Test\",\n  \"correo\": \"invalid\",\n  \"oficina\": {\n    \"nombre\": \"Oficina Test\",\n    \"ubicacion\": \"Test\"\n  }\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/docentes",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"docentes"
+							]
+						},
+						"description": "Prueba mensajes de validación en español (Accept-Language: es)"
+					},
+					"response": []
+				},
+				{
+					"name": "2.5 Crear Docente (Inglés - Validaciones)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept-Language",
+								"value": "en"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"nombres\": \"\",\n  \"apellidos\": \"Test\",\n  \"correo\": \"invalid\",\n  \"oficina\": {\n    \"nombre\": \"Office Test\",\n    \"ubicacion\": \"Test\"\n  }\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/docentes",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"docentes"
+							]
+						},
+						"description": "Prueba mensajes de validación en inglés (Accept-Language: en)"
+					},
+					"response": []
+				}
+			],
+			"description": "Servicios REST para gestión de docentes"
+		},
+		{
+			"name": "3. ESPACIOS FÍSICOS",
+			"item": [
+				{
+					"name": "3.1 Listar Espacios Físicos (Sin Filtros)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/api/espacios-fisicos",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"espacios-fisicos"
+							]
+						},
+						"description": "Lista todos los espacios físicos usando keyword JPA.\nOrdenados ascendentemente por nombre."
+					},
+					"response": []
+				},
+				{
+					"name": "3.2 Listar Espacios Físicos (Con Patrón)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/api/espacios-fisicos?patron=Aula&capacidad=0",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"espacios-fisicos"
+							],
+							"query": [
+								{
+									"key": "patron",
+									"value": "Aula"
+								},
+								{
+									"key": "capacidad",
+									"value": "0"
+								}
+							]
+						},
+						"description": "Lista espacios que empiezan con 'Aula' (ignora mayúsculas/minúsculas)"
+					},
+					"response": []
+				},
+				{
+					"name": "3.3 Listar Espacios Físicos (Patrón + Capacidad)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/api/espacios-fisicos?patron=Lab&capacidad=25",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"espacios-fisicos"
+							],
+							"query": [
+								{
+									"key": "patron",
+									"value": "Lab"
+								},
+								{
+									"key": "capacidad",
+									"value": "25"
+								}
+							]
+						},
+						"description": "Lista espacios que:\n- Empiezan con 'Lab'\n- Tienen capacidad >= 25\n- Ordenados por nombre ascendente"
+					},
+					"response": []
+				},
+				{
+					"name": "3.4 Actualizar Estado Espacio Físico (Activar)",
+					"request": {
+						"method": "PATCH",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/api/espacios-fisicos/1/estado?estado=true",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"espacios-fisicos",
+								"1",
+								"estado"
+							],
+							"query": [
+								{
+									"key": "estado",
+									"value": "true"
+								}
+							]
+						},
+						"description": "Actualiza solo el estado del espacio físico usando Query SQL nativo de modificación"
+					},
+					"response": []
+				},
+				{
+					"name": "3.5 Actualizar Estado Espacio Físico (Desactivar)",
+					"request": {
+						"method": "PATCH",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/api/espacios-fisicos/1/estado?estado=false",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"espacios-fisicos",
+								"1",
+								"estado"
+							],
+							"query": [
+								{
+									"key": "estado",
+									"value": "false"
+								}
+							]
+						},
+						"description": "Desactiva un espacio físico"
+					},
+					"response": []
+				}
+			],
+			"description": "Servicios REST para gestión de espacios físicos"
+		},
+		{
+			"name": "4. CURSOS",
+			"item": [
+				{
+					"name": "4.1 Listar Cursos por Asignatura",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/api/cursos/por-asignatura?nombreAsignatura=Matemáticas",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"cursos",
+								"por-asignatura"
+							],
+							"query": [
+								{
+									"key": "nombreAsignatura",
+									"value": "Matemáticas"
+								}
+							]
+						},
+						"description": "Lista cursos por nombre de asignatura usando keyword JPA (findByAsignaturaNombre)"
+					},
+					"response": []
+				},
+				{
+					"name": "4.2 Listar Cursos por Asignatura (Programación)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/api/cursos/por-asignatura?nombreAsignatura=Programación",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"cursos",
+								"por-asignatura"
+							],
+							"query": [
+								{
+									"key": "nombreAsignatura",
+									"value": "Programación"
+								}
+							]
+						},
+						"description": "Busca cursos de Programación"
+					},
+					"response": []
+				}
+			],
+			"description": "Servicios REST para gestión de cursos"
+		},
+		{
+			"name": "5. VALIDACIONES PERSONALIZADAS",
+			"item": [
+				{
+					"name": "5.1 Validar Formato Hora Militar (ERROR - hora > 23)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"dia\": \"Martes\",\n  \"horaInicio\": \"25:00\",\n  \"horaFin\": \"10:00\",\n  \"idCurso\": 1,\n  \"idEspacioFisico\": 1\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/franjas-horarias",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"franjas-horarias"
+							]
+						},
+						"description": "Prueba validación @FormatoHoraMilitar con hora inválida (25 > 23)"
+					},
+					"response": []
+				},
+				{
+					"name": "5.2 Validar Formato Hora Militar (ERROR - minutos > 59)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"dia\": \"Martes\",\n  \"horaInicio\": \"08:00\",\n  \"horaFin\": \"10:75\",\n  \"idCurso\": 1,\n  \"idEspacioFisico\": 1\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/franjas-horarias",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"franjas-horarias"
+							]
+						},
+						"description": "Prueba validación con minutos inválidos (75 > 59)"
+					},
+					"response": []
+				},
+				{
+					"name": "5.3 Validar Capacidad Espacio vs Matrícula (ERROR)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"dia\": \"Miércoles\",\n  \"horaInicio\": \"14:00\",\n  \"horaFin\": \"16:00\",\n  \"idCurso\": 1,\n  \"idEspacioFisico\": 3\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/franjas-horarias",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"franjas-horarias"
+							]
+						},
+						"description": "Prueba validación @CapacidadEspacioFisico.\nIntenta asignar un curso con matrícula alta a un espacio pequeño.\n\nNOTA: Requiere que el espacio 3 tenga capacidad menor que la matrícula del curso 1"
+					},
+					"response": []
+				}
+			],
+			"description": "Pruebas de validaciones personalizadas"
+		},
+		{
+			"name": "6. REGLAS DE NEGOCIO",
+			"item": [
+				{
+					"name": "6.1 ERROR - Espacio Físico No Existe",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"dia\": \"Jueves\",\n  \"horaInicio\": \"10:00\",\n  \"horaFin\": \"12:00\",\n  \"idCurso\": 1,\n  \"idEspacioFisico\": 999\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/franjas-horarias",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"franjas-horarias"
+							]
+						},
+						"description": "Intenta crear franja con espacio físico inexistente.\n\nEspera HTTP 404 - Entidad No Existe"
+					},
+					"response": []
+				},
+				{
+					"name": "6.2 ERROR - Curso No Existe",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"dia\": \"Viernes\",\n  \"horaInicio\": \"08:00\",\n  \"horaFin\": \"10:00\",\n  \"idCurso\": 999,\n  \"idEspacioFisico\": 1\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/franjas-horarias",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"franjas-horarias"
+							]
+						},
+						"description": "Intenta crear franja con curso inexistente.\n\nEspera HTTP 404"
+					},
+					"response": []
+				},
+				{
+					"name": "6.3 ERROR - Docente Ocupado",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"dia\": \"Lunes\",\n  \"horaInicio\": \"08:30\",\n  \"horaFin\": \"10:30\",\n  \"idCurso\": 2,\n  \"idEspacioFisico\": 2\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/franjas-horarias",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"franjas-horarias"
+							]
+						},
+						"description": "Intenta crear franja donde el docente está ocupado en ese horario.\n\nNOTA: Requiere que ya exista una franja en Lunes 08:00-10:00 con un docente, y el curso 2 tenga el mismo docente.\n\nEspera HTTP 400 - Regla de Negocio"
+					},
+					"response": []
+				}
+			],
+			"description": "Pruebas de reglas de negocio"
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:8080",
+			"type": "string"
+		}
+	]
+}
